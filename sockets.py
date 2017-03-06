@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-# Copyright (c) 2013-2014 Abram Hindle
+# Copyright (c) 2013-2017 Abram Hindle, Tiegan Bonowicz
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 import flask
-from flask import Flask, request
+from flask import Flask, request, jsonify, redirect
 from flask_sockets import Sockets
 import gevent
 from gevent import queue
@@ -69,7 +69,7 @@ myWorld.add_set_listener( set_listener )
 @app.route('/')
 def hello():
     '''Return something coherent here.. perhaps redirect to /static/index.html '''
-    return None
+    return redirect("/static/index.html")
 
 def read_ws(ws,client):
     '''A greenlet function that reads from the websocket and updates the world'''
@@ -97,25 +97,26 @@ def flask_post_json():
 @app.route("/entity/<entity>", methods=['POST','PUT'])
 def update(entity):
     '''update the entities via this interface'''
-    return None
+    data = json.loads(request.data)
+    for item in data.items():
+        myWorld.update(entity, item[0], item[1])
+    return jsonify(myWorld.get(entity))
 
 @app.route("/world", methods=['POST','GET'])    
 def world():
     '''you should probably return the world here'''
-    return None
+    return jsonify(myWorld.world())
 
 @app.route("/entity/<entity>")    
 def get_entity(entity):
     '''This is the GET version of the entity interface, return a representation of the entity'''
-    return None
-
+    return jsonify(myWorld.get(entity))
 
 @app.route("/clear", methods=['POST','GET'])
 def clear():
     '''Clear the world out!'''
-    return None
-
-
+    myWorld.clear()
+    return jsonify(myWorld.world())
 
 if __name__ == "__main__":
     ''' This doesn't work well anymore:
