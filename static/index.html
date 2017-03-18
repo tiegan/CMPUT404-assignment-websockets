@@ -40,11 +40,46 @@ function debug(str) {
     var debugDiv = document.getElementById('debug');
     debugDiv.innerHTML = "" + str;
 }
-debug("Test");
+//debug("Test");
 
 world = {};
 
-//XXX: TODO Make this prettier!
+// This function returns a purely random hex value for the color.
+function randomColor() {
+    var strColor = "#";
+    for(var i = 0; i < 6; i++) {
+        var value = Math.floor(Math.random() * 16);
+        if(value === 10) {
+            strColor += "A";
+        }
+        else if(value === 11) {
+            strColor += "B";
+        }
+        else if(value === 12) {
+            strColor += "C";
+        }
+        else if(value === 13) {
+            strColor += "D";
+        }
+        else if(value === 14) {
+            strColor += "E";
+        }
+        else if(value === 15) {
+            strColor += "F";
+        }
+        // In the extremely rare event.
+        // (note to self: actually check if random can = 1)
+        else if(value === 16) {
+            strColor += "0";
+        }
+        else {
+            strColor += value.toString();
+        }
+    }
+    return strColor;
+}
+
+//(maybe we'll still use this this time...hmmm...)
 function drawCircle(context,entity) {
     with(context) {
         beginPath();                
@@ -59,9 +94,54 @@ function drawCircle(context,entity) {
     }
 }
 
+// Stars still triumph over circles.
+/* Slightly modified from this:
+   Reference: http://stackoverflow.com/a/25840319
+   By: markE ( stackoverflow.com/users/411591/marke )
+   License: CC-BY-SA 3.0 */
+function drawStar(context, entity) {
+    with(context) {
+      var innerRadius = entity["radius"];
+      var outerRadius = entity["radius"]*2;
+      var spikes = 5;
+      var cx = entity["x"];
+      var cy = entity["y"];
+
+      var rot=Math.PI/2*3;
+      var x=cx;
+      var y=cy;
+      var step=Math.PI/spikes;
+
+      beginPath();
+      moveTo(cx,cy-outerRadius)
+      for(i=0;i<spikes;i++){
+        x=cx+Math.cos(rot)*outerRadius;
+        y=cy+Math.sin(rot)*outerRadius;
+        lineTo(x,y)
+        rot+=step
+
+        x=cx+Math.cos(rot)*innerRadius;
+        y=cy+Math.sin(rot)*innerRadius;
+        lineTo(x,y)
+        rot+=step
+      }
+      lineTo(cx,cy-outerRadius);
+      closePath();
+      lineWidth=5;
+      strokeStyle=entity["borderColour"];
+      stroke();
+      fillStyle=entity["colour"];
+      fill();
+    }
+}
+// End Reference
+
 function prepEntity(entity) {
     if (!entity["colour"]) {
         entity["colour"] = "#FF0000";
+    }
+    if (!entity["borderColour"]) {
+        entity["borderColour"] = "#FFFF00";
     }
     if (!entity["radius"]) {
         entity["radius"] = 50;
@@ -83,7 +163,7 @@ function renderFrame() {
     clearFrame();
     for (var key in world) {
         var entity = world[key];
-        drawCircle(context,prepEntity(entity));
+        drawStar(context,prepEntity(entity));
     }
 }
 
@@ -123,8 +203,10 @@ function getPosition(e) {
 
 function addEntity(entity, data) {
     world[entity] = data;
-    drawNextFrame(); // (but should we?)
-    //XXX: Send a XHTML Request that updates the entity you just modified!
+    drawNextFrame();
+    var message = {};
+    message[entity] = data;
+    socket.send(JSON.stringify(message));
 }
 var counter = 0;
 function addEntityWithoutName(data) {
@@ -229,18 +311,19 @@ mouse = (function() {
 })();
 
 // Add the application specific mouse listeners!
-//XXX: TODO Make these prettier!
 mouse.mousedowners.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'blue'});
+    addEntityWithoutName({'x':x,'y':y,'colour':randomColor(),
+                          'borderColour': randomColor(), "radius": 20});
 });
 
 mouse.mouseuppers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'red'});
+    addEntityWithoutName({'x':x,'y':y,'colour':randomColor(),
+                          'borderColour': randomColor(), "radius": 20});
 });
 
 mouse.mousedraggers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'green',
-                          'radius':10});
+    addEntityWithoutName({'x':x,'y':y,'colour':randomColor(),
+                          'borderColour': randomColor(), 'radius':10});
 });
 
 
@@ -254,14 +337,19 @@ function wsSetup() {
     socket = new WebSocket(url);
     socket.onopen = function() {
         //XXX: TODO What are you going to do here?
+        drawNextFrame(); //really, what else is there to do?
     };
     socket.onerror = function(msg) {
         debug("WebSocket Error:" + msg.data);
     };
     socket.onmessage = function(msg) {  
         try {
-            debug("WebSocket Recv:" + msg.data);
-            //XXX: TODO What are you going to do here?            
+            //debug("WebSocket Recv:" + msg.data);
+            var gottenMessage = JSON.parse(msg.data);
+            for (var key in gottenMessage) {
+                world[key] = gottenMessage[key];
+            }
+            drawNextFrame();
         } catch (e) {
             alert("socket on message: " + e);
         }

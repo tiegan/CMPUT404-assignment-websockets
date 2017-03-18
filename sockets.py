@@ -26,6 +26,22 @@ app = Flask(__name__)
 sockets = Sockets(app)
 app.debug = True
 
+# Reference from: https://github.com/abramhindle/WebSocketsExamples/blob/master/broadcaster.py
+# By: Abram Hindle
+# License: Apache 2.0
+clients = list()
+
+class Client:
+    def __init__(self):
+        self.queue = queue.Queue()
+
+    def put(self, v):
+        self.queue.put_nowait(v)
+
+    def get(self):
+        return self.queue.get()
+# End reference
+
 class World:
     def __init__(self):
         self.clear()
@@ -61,8 +77,14 @@ class World:
 
 myWorld = World()        
 
+# Reference from: https://github.com/abramhindle/WebSocketsExamples/blob/master/broadcaster.py
+# By: Abram Hindle
+# License: Apache 2.0
 def set_listener( entity, data ):
     ''' do something with the update ! '''
+    for client in clients:
+        client.put(json.dumps({entity: data}))
+# End reference
 
 myWorld.add_set_listener( set_listener )
         
@@ -71,17 +93,40 @@ def hello():
     '''Return something coherent here.. perhaps redirect to /static/index.html '''
     return redirect("/static/index.html")
 
+# Reference from: https://github.com/abramhindle/WebSocketsExamples/blob/master/broadcaster.py
+# By: Abram Hindle
+# License: Apache 2.0
 def read_ws(ws,client):
     '''A greenlet function that reads from the websocket and updates the world'''
-    # XXX: TODO IMPLEMENT ME
-    return None
+    try:
+        while True:
+            message = ws.receive()
+            if (message is not None):
+                packet = json.loads(message)
+                for key in packet:
+                    myWorld.set(key, packet[key])
+            else:
+                break
+    except:
+        '''Finished'''
 
 @sockets.route('/subscribe')
 def subscribe_socket(ws):
     '''Fufill the websocket URL of /subscribe, every update notify the
        websocket and read updates from the websocket '''
-    # XXX: TODO IMPLEMENT ME
-    return None
+    client = Client()
+    clients.append(client)
+    g = gevent.spawn(read_ws, ws, client)
+    try:
+        while True:
+            message = client.get()
+            ws.send(message)
+    except Exception as e:
+        print("Websocket error raised: %s" %e)
+    finally:
+        clients.remove(client)
+        gevent.kill(g)
+# End Reference
 
 
 def flask_post_json():
