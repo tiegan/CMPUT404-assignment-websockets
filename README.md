@@ -63,4 +63,13 @@ Nobody was collaborated with for this assignment.
 
 References
 ============
-None
+URL: https://github.com/abramhindle/WebSocketsExamples/blob/master/broadcaster.py  
+Author: Abram Hindle  
+Date Accessed: March 17, 2017  
+License: Apache 2.0  
+
+URL: http://stackoverflow.com/a/25840319  
+Title: "How to draw a star by using canvas HTML5?"  
+Author: markE ( http://stackoverflow.com/users/411591/marke )  
+Date Accessed: March 4, 2017  
+License: CC-BY-SA 3.0  
