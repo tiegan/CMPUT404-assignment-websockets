@@ -25,9 +25,13 @@
   <body bgcolor="white" height="100%" width="100%"> 
     <div id="debug"></div>
     <canvas id="c" width="100%" height="100%" style="-webkit-tap-highlight-color: transparent;"></canvas> 
-
+    <img id="McDavid" src="photos/McDavid.png" style="display: none;"/>
+    <img id="Draisaitl" src="photos/Draisaitl.png" style="display: none;"/>
+    <img id="Klefbom" src="photos/Klefbom.png" style="display: none;"/>
+    <img id="Talbot" src="photos/Talbot.png" style="display: none;"/>
+    <img id="Maroon" src="photos/Maroon.png" style="display: none;"/>
     <script>
-      // Fix me
+
 var canvas = document.getElementById('c');
 var host = window.location.host;
 var context = canvas.getContext("2d");
@@ -44,53 +48,38 @@ function debug(str) {
 
 world = {};
 
-// This function returns a purely random hex value for the color.
-function randomColor() {
-    var strColor = "#";
-    for(var i = 0; i < 6; i++) {
-        var value = Math.floor(Math.random() * 16);
-        if(value === 10) {
-            strColor += "A";
-        }
-        else if(value === 11) {
-            strColor += "B";
-        }
-        else if(value === 12) {
-            strColor += "C";
-        }
-        else if(value === 13) {
-            strColor += "D";
-        }
-        else if(value === 14) {
-            strColor += "E";
-        }
-        else if(value === 15) {
-            strColor += "F";
-        }
-        // In the extremely rare event.
-        // (note to self: actually check if random can = 1)
-        else if(value === 16) {
-            strColor += "0";
-        }
-        else {
-            strColor += value.toString();
-        }
+// Selects one of 5 players in the photos gallery.
+function randomPlayer() {
+    var random = Math.floor((Math.random() * 100) + 1);
+    var player = "";
+    if(random >= 1 && random <= 20) {
+        player = "McDavid";
     }
-    return strColor;
+    else if(random >= 21 && random <= 40) {
+        player = "Draisaitl";
+    }
+    else if(random >= 41 && random <= 60) {
+        player = "Klefbom";
+    }
+    else if(random >= 61 && random <= 80) {
+        player = "Maroon";
+    }
+    else {
+        player = "Talbot";
+    }
+    return player;
 }
 
-//(maybe we'll still use this this time...hmmm...)
-function drawCircle(context,entity) {
+// Draws an image onto the screen.
+function drawImage(context, entity) {
     with(context) {
-        beginPath();                
-        lineWidth = 3;
+        var image = document.getElementById(entity["image"]);
         var x = entity["x"];
         var y = entity["y"];
-        //moveTo(x,y);
-        fillStyle = entity["colour"];
-        strokeStyle = fillStyle;
-        arc(x, y, (entity["radius"])?entity["radius"]:50, 0, 2.0 * Math.PI, false);  
-        stroke();                                
+        // Need to correct for the fact the picture won't be centered with just x/y
+        x -= image.naturalWidth/2;
+        y -= image.naturalHeight/2;
+        drawImage(image, x, y);
     }
 }
 
@@ -138,13 +127,19 @@ function drawStar(context, entity) {
 
 function prepEntity(entity) {
     if (!entity["colour"]) {
-        entity["colour"] = "#FF0000";
+        entity["colour"] = "#CF4520";
     }
     if (!entity["borderColour"]) {
-        entity["borderColour"] = "#FFFF00";
+        entity["borderColour"] = "#00205B";
     }
     if (!entity["radius"]) {
-        entity["radius"] = 50;
+        entity["radius"] = 20;
+    }
+    if (!entity["type"]) {
+        entity["type"] = "star";
+    }
+    if (!entity["image"]) {
+        entity["image"] = "McDavid";
     }
     return entity;
 }
@@ -163,7 +158,12 @@ function renderFrame() {
     clearFrame();
     for (var key in world) {
         var entity = world[key];
-        drawStar(context,prepEntity(entity));
+        if(entity["type"] === "star") {
+            drawStar(context,prepEntity(entity));
+        }
+        else {
+            drawImage(context, prepEntity(entity));
+        }
     }
 }
 
@@ -312,18 +312,17 @@ mouse = (function() {
 
 // Add the application specific mouse listeners!
 mouse.mousedowners.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':randomColor(),
-                          'borderColour': randomColor(), "radius": 20});
+    addEntityWithoutName({'x':x,'y':y,'colour':"#00205B", 'borderColour': "#CF4520",
+                          "radius": 20, "type": "star"});
 });
 
 mouse.mouseuppers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':randomColor(),
-                          'borderColour': randomColor(), "radius": 20});
+    addEntityWithoutName({'x':x,'y':y,'colour':"#CF4520", 'borderColour': "#00205B",
+                          "radius": 20, "type": "star"});
 });
 
 mouse.mousedraggers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':randomColor(),
-                          'borderColour': randomColor(), 'radius':10});
+    addEntityWithoutName({'x':x,'y':y,"type": "image", "image": randomPlayer()});
 });
 
 
